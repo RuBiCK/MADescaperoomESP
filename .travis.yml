@@ -2,6 +2,7 @@ language: c
 sudo: false
 before_install:
   - set -e
+  - source $TRAVIS_BUILD_DIR/travis/common.sh
   - source <(curl -SLs https://raw.githubusercontent.com/${TRAVIS_REPO_SLUG}/${TRAVIS_BRANCH}/install.sh)
 
 install:
