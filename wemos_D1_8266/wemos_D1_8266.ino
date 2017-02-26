@@ -1,3 +1,4 @@
+//TODO: implement dual_topic https://www.baldengineer.com/multiple-mqtt-topics-pubsubclient.html
 #include <FS.h>                   //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
@@ -9,14 +10,16 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include <PubSubClient.h>
 
-int pinTrigger = 16;                 // Trigger connected to D0
+int ncolas = 2; // ncolas especifies the number of mqtt subscriptions (in the future maybe also for mqtt publishing)
+
+//TODO: fill the array with all pinout
+int pinTrigger[] = {16,5}; // pin connected to D0, D1...
 
 // wifi manager parameters
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[40] = "192.168.2.3" ;
-char mqtt_port[6];
-char mqtt_topic[34] = "fireplace/trigger";
-
+char mqtt_port[6] = "1883";
+char mqtt_topic[34]; 
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -36,7 +39,6 @@ long lastMsg = 0;
 char msg[50];
 int value = 0;
 
-
 //callback for  MQTT message received
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -51,16 +53,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // so I use the pin as input when I want to do not activate it
   
   if ((char)payload[0] == '1') {
-    pinMode(pinTrigger, INPUT); 
+    pinMode(pinTrigger[0], INPUT); 
     Serial.print("Turned off");
         
   } else {
 
     Serial.print("Turned ON");
-    pinMode(pinTrigger, OUTPUT); 
-    digitalWrite(pinTrigger, LOW);
-    
+    pinMode(pinTrigger[0], OUTPUT); 
+    digitalWrite(pinTrigger[0], LOW);
    }
+   
 }
 
 
@@ -164,8 +166,6 @@ void setup() {
     json.printTo(configFile);
     configFile.close();
     //end save
-
-
 
 String clientName;
 clientName = "firplace";
