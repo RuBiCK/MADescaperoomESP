@@ -23,7 +23,7 @@ script:
   - "echo $PWD"
   - "echo $HOME"
   - "ls $PWD"
-   - build_platform esp8266
+  - build_platform esp8266
 
 #  - source $TRAVIS_BUILD_DIR/travis/common.sh
  # - cat $TRAVIS_BUILD_DIR/travis/common.sh
