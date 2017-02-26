@@ -9,13 +9,13 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include <PubSubClient.h>
 
-int pinTrigger = 1;                 // Trigger connected to pin1
+int pinTrigger = 16;                 // Trigger connected to D0
 
 // wifi manager parameters
 //define your default values here, if there are different values in config.json, they are overwritten.
-//char mqtt_server[40] = "" ;
-//char mqtt_port[6] = "";
-//char mqtt_topic[34] = "";
+char mqtt_server[40] = "192.168.2.3" ;
+char mqtt_port[6];
+char mqtt_topic[34] = "fireplace/trigger";
 
 
 //flag for saving data
@@ -47,19 +47,19 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  // Switch on the LED if an 1 was received as first character
+  // We receive as payload the ouput of the digital pin. In my installation, I activate the thing with GND-> Low output and deactivate the thing with no connecting anything 
+  // so I use the pin as input when I want to do not activate it
+  
   if ((char)payload[0] == '1') {
-    Serial.print("Encendido");
-    // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is acive low on the ESP-01)
+    pinMode(pinTrigger, INPUT); 
+    Serial.print("Turned off");
+        
+  } else {
 
+    Serial.print("Turned ON");
     pinMode(pinTrigger, OUTPUT); 
     digitalWrite(pinTrigger, LOW);
     
-  } else {
-    pinMode(pinTrigger, INPUT); 
-    Serial.print("apagado");
    }
 }
 
@@ -72,7 +72,6 @@ void setup() {
  
   //clean FS, for testing
   //SPIFFS.format();
-
 
  //read configuration from FS json
   Serial.println("mounting FS...");
@@ -169,7 +168,7 @@ void setup() {
 
 
 String clientName;
-clientName = "paint";
+clientName = "firplace";
 
     if (client.connect((char*) clientName.c_str())) {
     Serial.println("Connected to MQTT broker");
@@ -184,15 +183,12 @@ clientName = "paint";
   }
   }
 
-     Serial.println("servidor mqtt:");
-     Serial.println(mqtt_server);
+    Serial.println("servidor mqtt:");
+    Serial.println(mqtt_server);
      
     client.setServer(mqtt_server, atoi(mqtt_port));
     Serial.println("configuring callback");
     client.setCallback(callback); 
-
-
-
 
 // OTA
     
@@ -200,7 +196,7 @@ clientName = "paint";
   ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-  //ArduinoOTA.setHostname("ESP-clock");
+  ArduinoOTA.setHostname("ESP-fireplace");
 
   // No authentication by default
   //ArduinoOTA.setPassword((const char *)"1234");
@@ -234,9 +230,6 @@ clientName = "paint";
 //------------END SETUP -----------------------------
 
 
-
-
-
 //reconect MQTT
 void reconnect() {
   // Loop until we're reconnected
@@ -263,6 +256,6 @@ void loop() {
    if (!client.connected()) {
     reconnect();
    }
-   
+  
    client.loop();
 }
