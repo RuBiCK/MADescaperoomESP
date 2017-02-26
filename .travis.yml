@@ -1,6 +1,7 @@
 language: c
 sudo: false
 before_install:
+  - set -e
   - source <(curl -SLs https://raw.githubusercontent.com/${TRAVIS_REPO_SLUG}/${TRAVIS_BRANCH}/install.sh)
 install:
 #  - ln -s $PWD /usr/local/share/arduino/libraries/WiFiManager
