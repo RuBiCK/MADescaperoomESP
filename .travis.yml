@@ -8,6 +8,7 @@ before_install:
   - tar xf arduino-1.6.5-linux64.tar.xz
   - sudo mv arduino-1.6.5 /usr/local/share/arduino
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+  - env
 
 
 install:
@@ -25,6 +26,7 @@ script:
   - "echo $PWD"
   - "echo $HOME"
   - "ls $PWD"
+  - "env"
   - source $TRAVIS_BUILD_DIR/travis/common.sh
   - build_examples
   - build_platform esp8266
