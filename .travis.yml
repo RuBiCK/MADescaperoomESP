@@ -1,5 +1,4 @@
 language: c
-sudo: false
 before_install:
   - set -e
   - source $TRAVIS_BUILD_DIR/travis/common.sh
