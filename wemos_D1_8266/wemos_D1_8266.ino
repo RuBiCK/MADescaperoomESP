@@ -10,8 +10,6 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include <PubSubClient.h>
 
-int ncolas = 2; // ncolas especifies the number of mqtt subscriptions (in the future maybe also for mqtt publishing)
-
 //TODO: fill the array with all pinout
 int pinTrigger[] = {16,5}; // pin connected to D0, D1...
 
@@ -19,7 +17,8 @@ int pinTrigger[] = {16,5}; // pin connected to D0, D1...
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[40] = "192.168.2.3" ;
 char mqtt_port[6] = "1883";
-char mqtt_topic[34]; 
+char mqtt_topic1[34]; 
+char mqtt_topic2[34]; 
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -44,6 +43,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
+
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
@@ -51,16 +51,21 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   // We receive as payload the ouput of the digital pin. In my installation, I activate the thing with GND-> Low output and deactivate the thing with no connecting anything 
   // so I use the pin as input when I want to do not activate it
-  
+  int pinActive;
+  if (topic == mqtt_topic1) pinActive = pinTrigger[0] ; 
+  if (topic == mqtt_topic2) pinActive = pinTrigger[1] ; 
+
   if ((char)payload[0] == '1') {
-    pinMode(pinTrigger[0], INPUT); 
+
+    pinMode(pinActive, INPUT); 
     Serial.print("Turned off");
         
   } else {
 
     Serial.print("Turned ON");
-    pinMode(pinTrigger[0], OUTPUT); 
-    digitalWrite(pinTrigger[0], LOW);
+
+    pinMode(pinActive, OUTPUT); 
+    digitalWrite(pinActive, LOW);
    }
    
 }
@@ -98,7 +103,8 @@ void setup() {
 
           strcpy(mqtt_server, json["mqtt_server"]);
           strcpy(mqtt_port, json["mqtt_port"]);
-          strcpy(mqtt_topic, json["mqtt_topic"]);
+          strcpy(mqtt_topic1, json["mqtt_topic1"]);
+          strcpy(mqtt_topic2, json["mqtt_topic2"]);
 
         } else {
           Serial.println("failed to load json config");
@@ -115,12 +121,14 @@ void setup() {
   // id/name placeholder/prompt default length
   WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
   WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 5);
-  WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 32);
+  WiFiManagerParameter custom_mqtt_topic1("topic1", "mqtt topic1", mqtt_topic1, 32);
+  WiFiManagerParameter custom_mqtt_topic2("topic2", "mqtt topic2", mqtt_topic2, 32);
 
   //add all your parameters here
   wifiManager.addParameter(&custom_mqtt_server);
   wifiManager.addParameter(&custom_mqtt_port);
-  wifiManager.addParameter(&custom_mqtt_topic);
+  wifiManager.addParameter(&custom_mqtt_topic1);
+  wifiManager.addParameter(&custom_mqtt_topic2);
   
   //set config save notify callback
   wifiManager.setSaveConfigCallback(saveConfigCallback);
@@ -146,7 +154,8 @@ void setup() {
   //read updated parameters
   strcpy(mqtt_server, custom_mqtt_server.getValue());
   strcpy(mqtt_port, custom_mqtt_port.getValue());
-  strcpy(mqtt_topic, custom_mqtt_topic.getValue());
+  strcpy(mqtt_topic1, custom_mqtt_topic1.getValue());
+  strcpy(mqtt_topic2, custom_mqtt_topic2.getValue());
 
   //save the custom parameters to FS
   if (shouldSaveConfig) {
@@ -155,7 +164,8 @@ void setup() {
     JsonObject& json = jsonBuffer.createObject();
     json["mqtt_server"] = mqtt_server;
     json["mqtt_port"] = mqtt_port;
-    json["mqtt_topic"] = mqtt_topic;
+    json["mqtt_topic1"] = mqtt_topic1;
+    json["mqtt_topic2"] = mqtt_topic2;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -168,12 +178,14 @@ void setup() {
     //end save
 
 String clientName;
-clientName = "firplace";
+//TODO add clientName as parameter
+clientName = "clockAndWine_ESP";
 
     if (client.connect((char*) clientName.c_str())) {
     Serial.println("Connected to MQTT broker");
     Serial.print("Topic is: ");
-    Serial.println(mqtt_topic);
+    Serial.print(mqtt_topic1);
+    Serial.println(mqtt_topic2);
     
   }
   else {
@@ -196,7 +208,7 @@ clientName = "firplace";
   ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-  ArduinoOTA.setHostname("ESP-fireplace");
+  ArduinoOTA.setHostname("ESP-wineAndClock");
 
   // No authentication by default
   //ArduinoOTA.setPassword((const char *)"1234");
@@ -239,7 +251,8 @@ void reconnect() {
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
       // TODO: notify new client is connected 
-      client.subscribe(mqtt_topic);
+      client.subscribe(mqtt_topic1);
+      client.subscribe(mqtt_topic2);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
