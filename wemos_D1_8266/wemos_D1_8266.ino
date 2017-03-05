@@ -11,14 +11,14 @@
 #include <PubSubClient.h>
 
 //TODO: fill the array with all pinout
-int pinTrigger[] = {16,5}; // pin connected to D0, D1...
+int pinTrigger[] = {16,5}; // pin connected to D0 (Topic1), D1(Topic2)...
 
 // wifi manager parameters
 //define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[40] = "192.168.2.3" ;
-char mqtt_port[6] = "1883";
+char mqtt_server[40];
+char mqtt_port[6];
 char mqtt_topic1[34]; 
-char mqtt_topic2[34]; 
+char mqtt_topic2[34];  
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -42,34 +42,29 @@ int value = 0;
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");
+  Serial.print("] :");
 
   for (int i = 0; i < length; i++) {
     Serial.print((char)payload[i]);
   }
-  Serial.println();
 
   // We receive as payload the ouput of the digital pin. In my installation, I activate the thing with GND-> Low output and deactivate the thing with no connecting anything 
   // so I use the pin as input when I want to do not activate it
   int pinActive;
-  if (topic == mqtt_topic1) pinActive = pinTrigger[0] ; 
+  if (topic == mqtt_topic1) pinActive = pinTrigger[0] ;    
+  
   if (topic == mqtt_topic2) pinActive = pinTrigger[1] ; 
-
+  
   if ((char)payload[0] == '1') {
-
     pinMode(pinActive, INPUT); 
     Serial.print("Turned off");
         
   } else {
-
     Serial.print("Turned ON");
-
     pinMode(pinActive, OUTPUT); 
     digitalWrite(pinActive, LOW);
    }
-   
 }
-
 
 //---SETUP------------------------------------------------------------------------------------
 
@@ -129,7 +124,7 @@ void setup() {
   wifiManager.addParameter(&custom_mqtt_port);
   wifiManager.addParameter(&custom_mqtt_topic1);
   wifiManager.addParameter(&custom_mqtt_topic2);
-  
+   
   //set config save notify callback
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.autoConnect("AutoConnectAP");
@@ -248,11 +243,13 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client")) {
+   if (client.connect("ESP8266Client")) {
       Serial.println("connected");
       // TODO: notify new client is connected 
       client.subscribe(mqtt_topic1);
       client.subscribe(mqtt_topic2);
+      Serial.println("subscribed");
+      delay(5000);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -264,10 +261,10 @@ void reconnect() {
 }
 
 void loop() {
-  ArduinoOTA.handle();
   
-   if (!client.connected()) {
-    reconnect();
+ ArduinoOTA.handle();
+     if (!client.connected()) {
+        reconnect();
    }
   
    client.loop();
