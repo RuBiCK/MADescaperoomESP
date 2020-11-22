@@ -3,19 +3,19 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <WiFiUdp.h>
-#include <WiFiManager.h>   //https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h>   // https://github.com/tzapu/WiFiManager
 #include <DNSServer.h>
 #include <ArduinoOTA.h>
-#include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
+#include <ArduinoJson.h>   // https://github.com/bblanchon/ArduinoJson
 #include <PubSubClient.h>
 
-int pinTrigger = 16;                 // Trigger connected to D0
+int pinTrigger = 16;       // Trigger connected to D0
 
 // wifi manager parameters
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[40] = "192.168.2.3" ;
-char mqtt_port[6];
-char mqtt_topic[34] = "fireplace/trigger";
+char mqtt_port[6] = "1883";
+char mqtt_topic[34] = "clock/trigger";
 
 
 //flag for saving data
@@ -47,17 +47,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  // We receive as payload the ouput of the digital pin. In my installation, I activate the thing with GND-> Low output and deactivate the thing with no connecting anything 
-  // so I use the pin as input when I want to do not activate it
-  
+// If we receive 1 as payload, activate the digital pin  
   if ((char)payload[0] == '1') {
-    pinMode(pinTrigger, INPUT); 
-    Serial.print("Turned off");
+    digitalWrite(pinTrigger, HIGH);       
+    Serial.print("Turned ON");
         
   } else {
 
-    Serial.print("Turned ON");
-    pinMode(pinTrigger, OUTPUT); 
+    Serial.print("Turned Off");
     digitalWrite(pinTrigger, LOW);
     
    }
@@ -69,6 +66,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting...");
+
+  pinMode(pinTrigger, OUTPUT); 
+
  
   //clean FS, for testing
   //SPIFFS.format();
@@ -168,7 +168,7 @@ void setup() {
 
 
 String clientName;
-clientName = "firplace";
+clientName = "clock";
 
     if (client.connect((char*) clientName.c_str())) {
     Serial.println("Connected to MQTT broker");
@@ -186,7 +186,7 @@ clientName = "firplace";
     Serial.println("servidor mqtt:");
     Serial.println(mqtt_server);
      
-    client.setServer(mqtt_server, atoi(mqtt_port));
+    client.setServer(mqtt_server, 1883);
     Serial.println("configuring callback");
     client.setCallback(callback); 
 
@@ -196,7 +196,7 @@ clientName = "firplace";
   ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-  ArduinoOTA.setHostname("ESP-fireplace");
+  ArduinoOTA.setHostname("ESP-clock");
 
   // No authentication by default
   //ArduinoOTA.setPassword((const char *)"1234");
@@ -233,6 +233,7 @@ clientName = "firplace";
 //reconect MQTT
 void reconnect() {
   // Loop until we're reconnected
+
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
@@ -252,7 +253,8 @@ void reconnect() {
 
 void loop() {
   ArduinoOTA.handle();
-  
+          Serial.println(client.connected());
+
    if (!client.connected()) {
     reconnect();
    }
